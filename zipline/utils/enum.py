@@ -37,11 +37,9 @@ _inttypes_map = {
         c_ushort
     }
 }
+
 _inttypes = list(
-    pd.Series(_inttypes_map).reindex(
-        range(max(_inttypes_map.keys())),
-        method='bfill',
-    ),
+    pd.Series(_inttypes_map, index=range(max(_inttypes_map.keys())+1)).bfill()[:max(_inttypes_map.keys())]
 )
 
 

@@ -10,6 +10,8 @@ import warnings
 import numpy as np
 import pandas as pd
 from distutils.version import StrictVersion
+
+from pandas.core.indexing import _iLocIndexer, _LocIndexer, _AtIndexer, _iAtIndexer
 from trading_calendars.utils.pandas_utils import days_at_time  # noqa: reexport
 
 pandas_version = StrictVersion(pd.__version__)
@@ -219,8 +221,24 @@ def ignore_pandas_nan_categorical_warning():
         yield
 
 
+# pandas 1.0.3 문제 해결위해 추가
+def get_indexers_list():
+    return [
+        # ("ix", _IXIndexer),  # deprecated
+        ("iloc", _iLocIndexer),
+        ("loc", _LocIndexer),
+        ("at", _AtIndexer),
+        ("iat", _iAtIndexer),
+    ]
+
+
+# pandas 1.0.3 문제 해결위해 수정
+# _INDEXER_NAMES = [
+#     '_' + name for (name, _) in pd.core.indexing.get_indexers_list()
+# ]
+
 _INDEXER_NAMES = [
-    '_' + name for (name, _) in pd.core.indexing.get_indexers_list()
+    '_' + name for (name, _) in get_indexers_list()
 ]
 
 
