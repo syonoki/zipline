@@ -346,7 +346,7 @@ class BoundColumn(LoadableTerm):
         """
         out = '.'.join([self.dataset.qualname, self.name])
         conversion = self._currency_conversion
-        if conversion is not None:
+        if conversion:
             out += '.fx({!r})'.format(conversion.currency.code)
         return out
 
