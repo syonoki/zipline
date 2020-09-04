@@ -335,5 +335,4 @@ def shift_dates(dates, start_date, end_date, shift):
         else:
             raise ValueError("Query end %s not in calendar" % end_date)
 
-    targets = dates[start - shift:end - shift + 1] # +1 to be inclusive
-    return targets[0], targets[-1]
+    return dates[start - shift:end - shift + 1]  # +1 to be inclusive
