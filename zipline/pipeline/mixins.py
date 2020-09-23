@@ -28,19 +28,20 @@ from zipline.utils.input_validation import expect_dtypes, expect_types
 from zipline.utils.numpy_utils import bool_dtype
 from zipline.utils.pandas_utils import nearest_unequal_elements
 
-
 from .downsample_helpers import (
     select_sampling_indices,
     expect_downsample_frequency,
 )
 from .sentinels import NotSpecified
 from .term import Term
+import numpy as np
 
 
 class PositiveWindowLengthMixin(Term):
     """
     Validation mixin enforcing that a Term gets a positive WindowLength
     """
+
     def _validate(self):
         super(PositiveWindowLengthMixin, self)._validate()
         if not self.windowed:
@@ -51,6 +52,7 @@ class SingleInputMixin(Term):
     """
     Validation mixin enforcing that a Term gets a length-1 inputs list.
     """
+
     def _validate(self):
         super(SingleInputMixin, self)._validate()
         num_inputs = len(self.inputs)
@@ -68,6 +70,7 @@ class StandardOutputs(Term):
     """
     Validation mixin enforcing that a Term cannot produce non-standard outputs.
     """
+
     def _validate(self):
         super(StandardOutputs, self)._validate()
         if self.outputs is not NotSpecified:
@@ -89,8 +92,8 @@ class RestrictedDTypeMixin(Term):
     def _validate(self):
         super(RestrictedDTypeMixin, self)._validate()
         assert self.ALLOWED_DTYPES is not NotSpecified, (
-            "ALLOWED_DTYPES not supplied on subclass "
-            "of RestrictedDTypeMixin: %s." % type(self).__name__
+                "ALLOWED_DTYPES not supplied on subclass "
+                "of RestrictedDTypeMixin: %s." % type(self).__name__
         )
 
         if self.dtype not in self.ALLOWED_DTYPES:
@@ -119,7 +122,14 @@ class CustomTermMixin(Term):
                 dtype=NotSpecified,
                 missing_value=NotSpecified,
                 ndim=NotSpecified,
+                ignore_asset_mask=None,
                 **kwargs):
+
+        if ignore_asset_mask is None:
+            if hasattr(cls, 'ignore_asset_mask'):
+                ignore_asset_mask = getattr(cls, 'ignore_asset_mask')
+            else:
+                ignore_asset_mask = False
 
         unexpected_keys = set(kwargs) - set(cls.params)
         if unexpected_keys:
@@ -131,7 +141,7 @@ class CustomTermMixin(Term):
                 )
             )
 
-        return super(CustomTermMixin, cls).__new__(
+        obj = super(CustomTermMixin, cls).__new__(
             cls,
             inputs=inputs,
             outputs=outputs,
@@ -142,6 +152,9 @@ class CustomTermMixin(Term):
             ndim=ndim,
             **kwargs
         )
+
+        setattr(obj, 'ignore_asset_mask', ignore_asset_mask)
+        return obj
 
     def compute(self, today, assets, out, *arrays):
         """
@@ -208,11 +221,17 @@ class CustomTermMixin(Term):
 
         with self.ctx:
             for idx, date in enumerate(dates):
-                # Never apply a mask to 1D outputs.
-                out_mask = array([True]) if ndim == 1 else mask[idx]
 
                 # Mask our inputs as usual.
-                inputs_mask = mask[idx]
+                if not self.ignore_asset_mask:
+                    # Never apply a mask to 1D outputs.
+                    out_mask = array([True]) if ndim == 1 else mask[idx]
+                    inputs_mask = mask[idx]
+                else:
+                    out_mask = np.empty_like(mask[idx])
+                    out_mask[:] = True
+                    inputs_mask = np.empty_like(mask[idx])
+                    inputs_mask[:] = True
 
                 masked_assets = assets[inputs_mask]
                 out_row = out[idx][out_mask]
@@ -226,7 +245,7 @@ class CustomTermMixin(Term):
         """Short repr to use when rendering Pipeline graphs."""
         # Graphviz interprets `\l` as "divide label into lines, left-justified"
         return type(self).__name__ + ':\\l  window_length: %d\\l' % \
-            self.window_length
+               self.window_length
 
 
 class LatestMixin(SingleInputMixin):
@@ -329,6 +348,7 @@ class AliasedMixin(SingleInputMixin, UniversalMixin):
     """
     Mixin for aliased terms.
     """
+
     def __new__(cls, term, name):
         return super(AliasedMixin, cls).__new__(
             cls,
@@ -591,6 +611,7 @@ class SliceMixin(UniversalMixin):
     Users should rarely construct instances of `Slice` directly. Instead, they
     should construct instances via indexing, e.g. `MyFactor()[Asset(24)]`.
     """
+
     def __new__(cls, term, asset):
         return super(SliceMixin, cls).__new__(
             cls,

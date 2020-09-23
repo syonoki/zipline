@@ -69,7 +69,6 @@ from zipline.utils.numpy_utils import (
 )
 from zipline.utils.sharedoc import templated_docstring
 
-
 _RANK_METHODS = frozenset(['average', 'min', 'max', 'dense', 'ordinal'])
 
 
@@ -89,11 +88,13 @@ def coerce_numbers_to_my_dtype(f):
     my_factor probably has dtype float64, but 3 is an int, so we want to coerce
     to float64 before doing the comparison.
     """
+
     @wraps(f)
     def method(self, other):
         if isinstance(other, Number):
             other = coerce_to_dtype(self.dtype, other)
         return f(self, other)
+
     return method
 
 
@@ -278,6 +279,7 @@ def reflected_binary_operator(op):
                 dtype=binop_return_dtype(op, other.dtype, self.dtype),
             )
         raise BadBinaryOperator(op, other, self)
+
     return reflected_binary_operator
 
 
@@ -320,6 +322,7 @@ def unary_operator(op):
                 (self,),
                 dtype=float64_dtype,
             )
+
     return unary_operator
 
 
@@ -356,6 +359,7 @@ def function_application(func):
                 (self,),
                 dtype=float64_dtype,
             )
+
     return mathfunc
 
 
@@ -376,7 +380,6 @@ float64_only = restrict_to_dtype(
         " but it was called on a Factor of dtype {received_dtype}."
     )
 )
-
 
 CORRELATION_METHOD_NOTE = dedent(
     """\
@@ -1723,6 +1726,7 @@ class RecarrayField(SingleInputMixin, Factor):
     """
     A single field from a multi-output factor.
     """
+
     def __new__(cls, factor, attribute):
         return super(RecarrayField, cls).__new__(
             cls,
@@ -1760,7 +1764,9 @@ class Latest(LatestMixin, CustomFactor):
     The `.latest` attribute of DataSet columns returns an instance of this
     Factor.
     """
+
     window_length = 1
+    ignore_asset_mask = True
 
     def compute(self, today, assets, out, data):
         out[:] = data[-1]
@@ -1779,7 +1785,7 @@ class DailySummary(SingleInputMixin, Factor):
         if dtype != float64_dtype:
             raise AssertionError(
                 "DailySummary only supports float64 dtype, got {}"
-                .format(dtype),
+                    .format(dtype),
             )
 
         return super(DailySummary, cls).__new__(
