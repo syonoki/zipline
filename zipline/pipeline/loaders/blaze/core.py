@@ -183,6 +183,7 @@ from zipline.lib.adjusted_array import can_represent_dtype
 from zipline.utils.input_validation import expect_element
 from zipline.utils.pandas_utils import ignore_pandas_nan_categorical_warning
 from zipline.utils.pool import SequentialPool
+
 try:
     from ._core import (  # noqa
         adjusted_arrays_from_rows_with_assets,
@@ -195,10 +196,12 @@ except ImportError:
     def getname(column):
         return column.get('blaze_column_name', column.name)
 
+
     def barf(*args, **kwargs):
         raise RuntimeError(
             "zipline.pipeline.loaders.blaze._core failed to import"
         )
+
 
     adjusted_arrays_from_rows_with_assets = barf
     adjusted_arrays_from_rows_without_assets = barf
@@ -229,6 +232,7 @@ class InvalidField(with_metaclass(ABCMeta)):
     type_ : dshape
         The shape of the field.
     """
+
     @abstractproperty
     def error_format(self):  # pragma: no cover
         raise NotImplementedError('error_format')
@@ -413,6 +417,7 @@ class NoMetaDataWarning(UserWarning):
     field : {'deltas',  'checkpoints'}
         The field that was looked up.
     """
+
     def __init__(self, expr, field):
         self._expr = expr
         self._field = field
@@ -599,7 +604,7 @@ def from_blaze(expr,
                 " found: %s" % (
                     ' or '.join(
                         ['deltas'] if deltas is not None else [] +
-                        ['checkpoints'] if checkpoints is not None else [],
+                                                              ['checkpoints'] if checkpoints is not None else [],
                     ),
                     ', '.join(map(get__name__, valid_deltas_node_types)),
                     ', '.join(
@@ -679,8 +684,8 @@ def from_blaze(expr,
             ),
         )
     if (checkpoints is not None and
-        (sorted(checkpoints.dshape.measure.fields) !=
-         sorted(measure.fields))):
+            (sorted(checkpoints.dshape.measure.fields) !=
+             sorted(measure.fields))):
         raise TypeError(
             'baseline measure != checkpoints measure:\n%s != %s' % (
                 measure,
@@ -734,6 +739,7 @@ class ExprData(object):
     odo_kwargs : dict, optional
         The keyword arguments to forward to the odo calls internally.
     """
+
     def __init__(self,
                  expr,
                  deltas=None,
@@ -775,12 +781,12 @@ class ExprData(object):
         # If the expressions have _resources() then the repr will
         # drive computation so we take the str here.
         return (
-            'ExprData(expr=%s, deltas=%s, checkpoints=%s, odo_kwargs=%r)' % (
-                self.expr,
-                self.deltas,
-                self.checkpoints,
-                self.odo_kwargs,
-            )
+                'ExprData(expr=%s, deltas=%s, checkpoints=%s, odo_kwargs=%r)' % (
+            self.expr,
+            self.deltas,
+            self.checkpoints,
+            self.odo_kwargs,
+        )
         )
 
     @staticmethod
@@ -800,10 +806,10 @@ class ExprData(object):
             return NotImplemented
 
         return (
-            self._expr_eq(self.expr, other.expr) and
-            self._expr_eq(self.deltas, other.deltas) and
-            self._expr_eq(self.checkpoints, other.checkpoints) and
-            self._odo_kwargs is other._odo_kwargs
+                self._expr_eq(self.expr, other.expr) and
+                self._expr_eq(self.deltas, other.deltas) and
+                self._expr_eq(self.checkpoints, other.checkpoints) and
+                self._odo_kwargs is other._odo_kwargs
         )
 
 
@@ -834,6 +840,7 @@ class BlazeLoader(implements(PipelineLoader)):
     :class:`zipline.utils.pool.SequentialPool`
     :class:`multiprocessing.Pool`
     """
+
     def __init__(self, dsmap=None, pool=SequentialPool()):
         # explicitly public
         self.pool = pool
@@ -1034,6 +1041,9 @@ class BlazeLoader(implements(PipelineLoader)):
         all_rows[TS_FIELD_NAME] = all_rows[TS_FIELD_NAME].astype(
             'datetime64[ns]',
         )
+        all_rows[AD_FIELD_NAME] = all_rows[AD_FIELD_NAME].dt.tz_localize(None)
+        dates = dates.tz_localize(None)
+        data_query_cutoff_times = data_query_cutoff_times.tz_localize(None)
         all_rows.sort_values([TS_FIELD_NAME, AD_FIELD_NAME], inplace=True)
 
         if have_sids:
